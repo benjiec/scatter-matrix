@@ -6,14 +6,32 @@
     <link type="text/css" rel="stylesheet" href="../scatter-matrix.css">
   </head>
   <body>
+
+    <a href="https://github.com/benjiec/scatter-matrix"
+    ><img style="position: absolute; top: 0; right: 0; border: 0;"
+         src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+
     <h2 style="font-size:24px;">
       Scatter-Matrix.js
     </h2>
+
+    <p>
+      Explore matrix data (samples as rows, observations as columns) using
+      scatterplot matrix. Simply supply a CSV with a header. For example:
+    </p>
+
+    <pre>
+&lt;script type="text/javascript"&gt;
+  var sm = new ScatterMatrix('http://my.domain/data.csv');
+  sm.render();
+&lt;/script&gt;
+</pre>
+
     <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script src="../scatter-matrix.js"></script>
     <script type="text/javascript">
       var sm = new ScatterMatrix('demo.csv');
-      sm.control();
+      sm.render();
     </script>
   </body>
 </html>

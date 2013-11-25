@@ -16,7 +16,7 @@ ScatterMatrix.prototype.onData = function(cb) {
   });
 };
 
-ScatterMatrix.prototype.control = function () {
+ScatterMatrix.prototype.render = function () {
   var self = this;
   
   this.onData(function() {
@@ -46,13 +46,13 @@ ScatterMatrix.prototype.control = function () {
              .append('a')
                .attr('href', '#')
                .text(function(d) { return d ? d : 'None'; })
-               .on('click', function(d, i) { self.draw(d, svg); });
+               .on('click', function(d, i) { self.__draw(d, svg); });
 
-    self.draw(undefined, svg);
+    self.__draw(undefined, svg);
   });
 };
 
-ScatterMatrix.prototype.draw = function (color, container_el) {
+ScatterMatrix.prototype.__draw = function (color, container_el) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
