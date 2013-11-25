@@ -5,6 +5,12 @@
 ScatterMatrix = function(url) {
   this.__url = url;
   this.__data = undefined;
+  this.__cell_size = 140;
+};
+
+ScatterMatrix.prototype.cellSize = function(n) {
+  this.__cell_size = n;
+  return this;
 };
 
 ScatterMatrix.prototype.onData = function(cb) {
@@ -84,7 +90,8 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
     }
 
     // Size parameters
-    var size = 140, padding = 10, axis_width = 40, legend_width = 200, margin = 0;
+    var size = self.__cell_size,
+        padding = 10, axis_width = 40, legend_width = 200, margin = 0;
 
     // Get x and y scales for each numeric variable
     var x = {}, y = {};
@@ -100,9 +107,17 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
     });
 
     // Axes
-    var axis = d3.svg.axis()
-        .ticks(5)
-        .tickSize(size * numeric_variables.length);
+    var axis = d3.svg.axis();
+    var intf = d3.format('d');
+    var fltf = d3.format('.1f');
+    var scif = d3.format('e');
+    axis.ticks(5)
+        .tickSize(size * numeric_variables.length)
+        .tickFormat(function(d) {
+          if (+d > 10000) { return scif(d); }
+          if (parseInt(d) == +d) { return intf(d); }
+          return fltf(d);
+        });
 
     // Brush - for highlighting regions of data
     var brush = d3.svg.brush()
