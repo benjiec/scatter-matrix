@@ -1,52 +1,20 @@
-svg {
-  font-size: 14px;
-}
+svg { font-size: 14px; }
 
-.axis {
-  shape-rendering: crispEdges;
-}
+.axis { shape-rendering: crispEdges; }
+.axis line { stroke: #ddd; stroke-width: .5px; }
+.axis path { display: none; }
 
-.axis line {
-  stroke: #ddd;
-  stroke-width: .5px;
-}
+rect.extent { fill: #000; fill-opacity: .125; stroke: #fff; }
+rect.frame { fill: #fff; fill-opacity: .7; stroke: #aaa; }
 
-.axis path {
-  display: none;
-}
+circle { fill: #ccc; fill-opacity: .5; }
 
-rect.extent {
-  fill: #000;
-  fill-opacity: .125;
-  stroke: #fff;
-}
+.legend circle { fill-opacity: 1; }
+.legend text { font-size: 18px; font-style: oblique; }
 
-rect.frame {
-  fill: #fff;
-  fill-opacity: .7;
-  stroke: #aaa;
-}
-
-circle {
-  fill: #ccc;
-  fill-opacity: .5;
-}
-
-.legend circle {
-  fill-opacity: 1;
-}
-
-.legend text {
-  font-size: 18px;
-  font-style: oblique;
-}
-
-.cell text {
-  pointer-events: none;
-}
+.cell text { pointer-events: none; }
 
 .color-0 { fill: #800; }
 .color-1 { fill: #080; }
 .color-2 { fill: #008; }
-
 
