@@ -25,7 +25,7 @@ ScatterMatrix.prototype.render = function () {
     // Fetch data and get all string variables
     var string_variables = [undefined];
     for (k in data[0]) {
-      if (!+data[0][k]) { string_variables.push(k); }
+      if (isNaN(+data[0][k])) { string_variables.push(k); }
     }
 
     var container = d3.select('body').append('div')
@@ -65,7 +65,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
     // Parse headers from first row of data
     var numeric_variables = [];
     for (k in data[0]) {
-      if (+data[0][k]) { numeric_variables.push(k); }
+      if (!isNaN(+data[0][k])) { numeric_variables.push(k); }
     }
 
     // Get values of the string variable
