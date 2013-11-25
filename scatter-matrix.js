@@ -27,7 +27,6 @@ ScatterMatrix.prototype.control = function () {
     for (k in data[0]) {
       if (!+data[0][k]) { string_variables.push(k); }
     }
-    console.log(string_variables);
 
     var container = d3.select('body').append('div')
                                      .attr('class', 'scatter-matrix-container');
@@ -68,7 +67,6 @@ ScatterMatrix.prototype.draw = function (color, container_el) {
     for (k in data[0]) {
       if (+data[0][k]) { numeric_variables.push(k); }
     }
-    console.log(numeric_variables);
 
     // Get values of the string variable
     var colors = [];
@@ -77,7 +75,6 @@ ScatterMatrix.prototype.draw = function (color, container_el) {
         var s = d[color];
         if (colors.indexOf(s) < 0) { colors.push(s); }
       })
-      console.log(colors);
     }
 
     function color_class(d) {
