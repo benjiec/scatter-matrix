@@ -40,7 +40,8 @@ ScatterMatrix.prototype.render = function () {
                            .attr('class', 'scatter-matrix-control');
 
     var svg = container.append('div')
-                       .attr('class', 'scatter-matrix-svg');
+                       .attr('class', 'scatter-matrix-svg')
+                       .html('<em>Loading data...</em>');
 
     control.append('p').text('Select a variable to color:')
 
@@ -63,7 +64,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
   this.onData(function() {
     var data = self.__data;
 
-    container_el.selectAll('svg').remove();
+    container_el.selectAll('*').remove();
 
     // If no data, don't do anything
     if (data.length == 0) { return; }
