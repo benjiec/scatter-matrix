@@ -186,7 +186,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
     function plot(p) {
       var cell = d3.select(this);
 
-      // Plot frame.
+      // Frame
       cell.append("svg:rect")
           .attr("class", "frame")
           .attr("x", padding / 2)
@@ -194,20 +194,20 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
           .attr("width", size - padding)
           .attr("height", size - padding);
 
-      // Plot dots.
+      // Scatter plot dots
       cell.selectAll("circle")
           .data(data)
         .enter().append("svg:circle")
           .attr("class", function(d) { return color_class(d); })
           .attr("cx", function(d) { return x[p.x](d[p.x]); })
           .attr("cy", function(d) { return y[p.y](d[p.y]); })
-          .attr("r", 3);
+          .attr("r", 5);
 
-      // Plot brush.
+      // Brush
       cell.call(brush.x(x[p.x]).y(y[p.y]));
     }
 
-    // Clear the previously-active brush, if any.
+    // Clear the previously-active brush, if any
     function brushstart(p) {
       if (brush.data !== p) {
         cell.call(brush.clear());
@@ -215,7 +215,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
       }
     }
 
-    // Highlight the selected circles.
+    // Highlight selected circles
     function brush(p) {
       var e = brush.extent();
       svg.selectAll(".cell circle").attr("class", function(d) {
@@ -225,7 +225,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
       });
     }
 
-    // If the brush is empty, select all circles.
+    // If brush is empty, select all circles
     function brushend() {
       if (brush.empty()) svg.selectAll(".cell circle").attr("class", function(d) {
         return color_class(d);
