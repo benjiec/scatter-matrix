@@ -101,9 +101,11 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
 
       var value = function(d) { return d[trait]; },
           domain = [d3.min(data, value), d3.max(data, value)],
-          range = [padding / 2, size - padding / 2];
-      x[trait] = d3.scale.linear().domain(domain).range(range);
-      y[trait] = d3.scale.linear().domain(domain).range(range.reverse());
+          range_x = [padding / 2, size - padding / 2],
+          range_y = [padding / 2, size - padding / 2];
+
+      x[trait] = d3.scale.linear().domain(domain).range(range_x);
+      y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
     });
 
     // Axes
@@ -132,7 +134,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
       .append("svg:g")
         .attr("transform", "translate(" + margin + "," + margin + ")");
 
-    // Legend.
+    // Push legend to the side
     var legend = svg.selectAll("g.legend")
         .data(colors)
       .enter().append("svg:g")
