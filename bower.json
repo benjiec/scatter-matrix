@@ -2,11 +2,7 @@
   "name": "scatter-matrix",
   "version": "0.1.0",
   "main": ["scatter-matrix.css", "scatter-matrix.js"],
-  "ignore": {
-    "demo",
-    "README.md",
-    ".gitignore"
-  },
+  "ignore": [ "demo", ".gitignore", ".git" ],
   "dependencies": {
     "d3": "3.3.10"
   }
