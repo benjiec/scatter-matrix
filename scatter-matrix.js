@@ -24,7 +24,15 @@ ScatterMatrix.prototype.onData = function(cb) {
 
 ScatterMatrix.prototype.render = function () {
   var self = this;
-  
+
+  var container = d3.select('body').append('div')
+                                   .attr('class', 'scatter-matrix-container');
+  var control = container.append('div')
+                         .attr('class', 'scatter-matrix-control');
+  var svg = container.append('div')
+                     .attr('class', 'scatter-matrix-svg')
+                     .html('<em>Loading data...</em>');
+
   this.onData(function() {
     var data = self.__data;
 
@@ -33,15 +41,6 @@ ScatterMatrix.prototype.render = function () {
     for (k in data[0]) {
       if (isNaN(+data[0][k])) { string_variables.push(k); }
     }
-
-    var container = d3.select('body').append('div')
-                                     .attr('class', 'scatter-matrix-container');
-    var control = container.append('div')
-                           .attr('class', 'scatter-matrix-control');
-
-    var svg = container.append('div')
-                       .attr('class', 'scatter-matrix-svg')
-                       .html('<em>Loading data...</em>');
 
     control.append('p').text('Select a variable to color:')
 
