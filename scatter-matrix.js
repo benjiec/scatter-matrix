@@ -73,6 +73,7 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
     for (k in data[0]) {
       if (!isNaN(+data[0][k])) { numeric_variables.push(k); }
     }
+    numeric_variables.sort();
 
     // Get values of the string variable
     var colors = [];
