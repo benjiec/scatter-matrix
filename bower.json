@@ -1,8 +1,7 @@
 {
-  "name": "scatter-matrix.js",
+  "name": "scatter-matrix",
   "version": "0.1.0",
   "main": ["scatter-matrix.css", "scatter-matrix.js"],
-  "ignore": [ "**/*" ],
   "dependencies": {
     "d3": "3.3.10"
   }
