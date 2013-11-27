@@ -43,25 +43,65 @@ ScatterMatrix.prototype.render = function () {
     }
 
     control.append('p').text('Select a variable to color:')
+    
+    var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
+    var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
 
-    control.append('div').attr('class', 'scatter-matrix-color-control')
-           .append('ul')
-           .selectAll('li')
-           .data(string_variables)
-           .enter().append('li')
-             .append('a')
-               .attr('href', '#')
-               .text(function(d) { return d ? d : 'None'; })
-               .on('click', function(d, i) { self.__draw(d, svg); });
+    function set_filter(variable) {
+      if (variable) {
+        // Get unique values for this variable
+        var values = [];
+        data.forEach(function(d) {
+          var v = d[variable];
+          if (values.indexOf(v) < 0) { values.push(v); }
+        });
+        // Setup filters
+        filter_control.append('p').text('Filter by '+variable+': ');
+
+        filter_control.append('ul')
+                      .selectAll('li')
+                      .data(values)
+                      .enter().append('li')
+                        .append('a')
+                          .attr('href', '#')
+                          .text(function(d) { return d; })
+                          .on('click', function(d, i) {
+                            self.__draw(variable, svg, d);
+                          });
+      }
+      else {
+        filter_control.selectAll('*').remove();
+      }
+    }
+
+    color_control
+      .append('ul')
+      .selectAll('li')
+      .data(string_variables)
+      .enter().append('li')
+        .append('a')
+          .attr('href', '#')
+          .text(function(d) { return d ? d : 'None'; })
+          .on('click', function(d, i) {
+            self.__draw(d, svg);
+            set_filter(d);
+          });
 
     self.__draw(undefined, svg);
   });
 };
 
-ScatterMatrix.prototype.__draw = function (color, container_el) {
+ScatterMatrix.prototype.__draw = function (variable, container_el, color) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
+
+    if (variable && color) {
+      data = [];
+      self.__data.forEach(function(d) {
+        if (d[variable] === color) { data.push(d); }
+      });
+    }
 
     container_el.selectAll('*').remove();
 
@@ -77,16 +117,18 @@ ScatterMatrix.prototype.__draw = function (color, container_el) {
 
     // Get values of the string variable
     var colors = [];
-    if (color) {
-      data.forEach(function(d) {
-        var s = d[color];
+    if (variable) {
+      // Using self.__data, instead of data, so our css classes are consistent when
+      // we filter by value.
+      self.__data.forEach(function(d) {
+        var s = d[variable];
         if (colors.indexOf(s) < 0) { colors.push(s); }
-      })
+      });
     }
 
     function color_class(d) {
       var c = d;
-      if (color && d[color]) { c = d[color]; }
+      if (variable && d[variable]) { c = d[variable]; }
       return colors.length > 0 ? 'color-'+colors.indexOf(c) : 'color-2';
     }
 
