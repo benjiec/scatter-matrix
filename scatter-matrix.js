@@ -48,6 +48,7 @@ ScatterMatrix.prototype.render = function () {
     var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
 
     function set_filter(variable) {
+      filter_control.selectAll('*').remove();
       if (variable) {
         // Get unique values for this variable
         var values = [];
@@ -68,9 +69,6 @@ ScatterMatrix.prototype.render = function () {
                           .on('click', function(d, i) {
                             self.__draw(variable, svg, d);
                           });
-      }
-      else {
-        filter_control.selectAll('*').remove();
       }
     }
 
