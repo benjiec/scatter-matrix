@@ -38,14 +38,27 @@ ScatterMatrix.prototype.render = function () {
 
     // Fetch data and get all string variables
     var string_variables = [undefined];
+    var numeric_variables = [];
+
     for (k in data[0]) {
       if (isNaN(+data[0][k])) { string_variables.push(k); }
+      else { numeric_variables.push(k); }
     }
 
     control.append('p').text('Select a variable to color:')
     
     var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
     var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
+    var variable_control = control.append('div').attr('class', 'scatter-matrix-variable-control');
+
+    // shared control states
+    var to_include = [];
+    var color_variable = undefined;
+    var color_value = undefined;
+    for (var j in numeric_variables) {
+      var v = numeric_variables[j];
+      to_include.push(v);
+    }
 
     function set_filter(variable) {
       filter_control.selectAll('*').remove();
@@ -67,7 +80,9 @@ ScatterMatrix.prototype.render = function () {
                           .attr('href', '#')
                           .text(function(d) { return d; })
                           .on('click', function(d, i) {
-                            self.__draw(variable, svg, d);
+                            color_variable = variable;
+                            color_value = d;
+                            self.__draw(svg, color_variable, color_value, to_include);
                           });
       }
     }
@@ -81,23 +96,49 @@ ScatterMatrix.prototype.render = function () {
           .attr('href', '#')
           .text(function(d) { return d ? d : 'None'; })
           .on('click', function(d, i) {
-            self.__draw(d, svg);
+            color_variable = d;
+            color_value = undefined;
+            self.__draw(svg, color_variable, color_value, to_include);
             set_filter(d);
           });
 
-    self.__draw(undefined, svg);
+    var variable_li =
+      variable_control
+        .append('p').text('Include variables: ')
+        .append('ul')
+        .selectAll('li')
+        .data(numeric_variables)
+        .enter().append('li');
+
+    variable_li.append('input')
+               .attr('type', 'checkbox')
+               .attr('checked', 'checked')
+               .on('click', function(d, i) {
+                 var new_to_include = [];
+                 for (var j in to_include) {
+                   var v = to_include[j];
+                   if (v !== d || this.checked) { new_to_include.push(v); } 
+                 }
+                 if (this.checked) { new_to_include.push(d); }
+                 to_include = new_to_include;
+                 self.__draw(svg, color_variable, color_value, to_include);
+               });
+    variable_li.append('label')
+               .html(function(d) { return d; });
+
+    self.__draw(svg, color_variable, color_value, to_include);
   });
 };
 
-ScatterMatrix.prototype.__draw = function (variable, container_el, color) {
+ScatterMatrix.prototype.__draw = function(container_el, color_variable, color, to_include) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
 
-    if (variable && color) {
+    if (color_variable && color) {
       data = [];
       self.__data.forEach(function(d) {
-        if (d[variable] === color) { data.push(d); }
+        if (d[color_variable] === color) { data.push(d); }
       });
     }
 
@@ -108,25 +149,26 @@ ScatterMatrix.prototype.__draw = function (variable, container_el, color) {
 
     // Parse headers from first row of data
     var numeric_variables = [];
+    console.log(to_include);
     for (k in data[0]) {
-      if (!isNaN(+data[0][k])) { numeric_variables.push(k); }
+      if (!isNaN(+data[0][k]) && to_include.indexOf(k) >= 0) { numeric_variables.push(k); }
     }
     numeric_variables.sort();
 
     // Get values of the string variable
     var colors = [];
-    if (variable) {
+    if (color_variable) {
       // Using self.__data, instead of data, so our css classes are consistent when
       // we filter by value.
       self.__data.forEach(function(d) {
-        var s = d[variable];
+        var s = d[color_variable];
         if (colors.indexOf(s) < 0) { colors.push(s); }
       });
     }
 
     function color_class(d) {
       var c = d;
-      if (variable && d[variable]) { c = d[variable]; }
+      if (color_variable && d[color_variable]) { c = d[color_variable]; }
       return colors.length > 0 ? 'color-'+colors.indexOf(c) : 'color-2';
     }
 

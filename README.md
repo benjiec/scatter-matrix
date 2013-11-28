@@ -8,10 +8,11 @@ columns appear as rows and columns of the scatterplot matrix.
 
 SM is a simple extension/generalization of [Mike Bostock's scatterplot matrix
 example](http://mbostock.github.io/d3/talk/20111116/iris-splom.html).
-Additional features include
+Additional and optional features include
 
-  * Optionally colors dots on the scatter plots by values of a user selected non-numeric column/variable.
-  * Optionally data filtering using a user selected non-numeric column/variable.
+  * Coloring of dots by values of a user selected non-numeric column/variable.
+  * Data filtering using a user selected non-numeric column/variable.
+  * Selecting which numeric columns to include in the scatterplot matrix.
 
 For demo, see http://benjiec.github.io/scatter-matrix/demo/demo.html
 
