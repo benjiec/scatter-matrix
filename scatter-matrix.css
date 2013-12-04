@@ -3,6 +3,7 @@ svg { font-size: 14px; }
 .axis { shape-rendering: crispEdges; }
 .axis line { stroke: #ddd; stroke-width: 1px; }
 .axis path { display: none; }
+.axis text { font-size: 0.8em; }
 
 rect.extent { fill: #000; fill-opacity: .125; stroke: #fff; }
 rect.frame { fill: #fff; fill-opacity: .7; stroke: #aaa; }
@@ -32,4 +33,7 @@ circle { fill: #ccc; fill-opacity: .5; }
 .color-15 { fill: #c00; }
 .color-16 { fill: #0c0; }
 .color-17 { fill: #00c; }
+
+.scatter-matrix-filter-control ul { list-style: none; padding-left: 10px; }
+.scatter-matrix-variable-control ul { list-style: none; padding-left: 10px; }
 

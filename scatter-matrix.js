@@ -54,7 +54,7 @@ ScatterMatrix.prototype.render = function () {
     // shared control states
     var to_include = [];
     var color_variable = undefined;
-    var color_value = undefined;
+    var selected_colors = undefined;
     for (var j in numeric_variables) {
       var v = numeric_variables[j];
       to_include.push(v);
@@ -69,21 +69,36 @@ ScatterMatrix.prototype.render = function () {
           var v = d[variable];
           if (values.indexOf(v) < 0) { values.push(v); }
         });
-        // Setup filters
-        filter_control.append('p').text('Filter by '+variable+': ');
 
-        filter_control.append('ul')
-                      .selectAll('li')
-                      .data(values)
-                      .enter().append('li')
-                        .append('a')
-                          .attr('href', '#')
-                          .text(function(d) { return d; })
-                          .on('click', function(d, i) {
-                            color_variable = variable;
-                            color_value = d;
-                            self.__draw(svg, color_variable, color_value, to_include);
-                          });
+        selected_colors = [];
+        for (var j in values) {
+          var v = values[j];
+          selected_colors.push(v);
+        }
+
+        var filter_li =
+          filter_control
+            .append('p').text('Filter by '+variable+': ')
+            .append('ul')
+            .selectAll('li')
+            .data(values)
+            .enter().append('li');
+
+        filter_li.append('input')
+                   .attr('type', 'checkbox')
+                   .attr('checked', 'checked')
+                   .on('click', function(d, i) {
+                     var new_selected_colors = [];
+                     for (var j in selected_colors) {
+                       var v = selected_colors[j];
+                       if (v !== d || this.checked) { new_selected_colors.push(v); } 
+                     }
+                     if (this.checked) { new_selected_colors.push(d); }
+                     selected_colors = new_selected_colors;
+                     self.__draw(svg, color_variable, selected_colors, to_include);
+                   });
+        filter_li.append('label')
+                   .html(function(d) { return d; });
       }
     }
 
@@ -97,8 +112,8 @@ ScatterMatrix.prototype.render = function () {
           .text(function(d) { return d ? d : 'None'; })
           .on('click', function(d, i) {
             color_variable = d;
-            color_value = undefined;
-            self.__draw(svg, color_variable, color_value, to_include);
+            selected_colors = undefined;
+            self.__draw(svg, color_variable, selected_colors, to_include);
             set_filter(d);
           });
 
@@ -121,24 +136,24 @@ ScatterMatrix.prototype.render = function () {
                  }
                  if (this.checked) { new_to_include.push(d); }
                  to_include = new_to_include;
-                 self.__draw(svg, color_variable, color_value, to_include);
+                 self.__draw(svg, color_variable, selected_colors, to_include);
                });
     variable_li.append('label')
                .html(function(d) { return d; });
 
-    self.__draw(svg, color_variable, color_value, to_include);
+    self.__draw(svg, color_variable, selected_colors, to_include);
   });
 };
 
-ScatterMatrix.prototype.__draw = function(container_el, color_variable, color, to_include) {
+ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected_colors, to_include) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
 
-    if (color_variable && color) {
+    if (color_variable && selected_colors) {
       data = [];
       self.__data.forEach(function(d) {
-        if (d[color_variable] === color) { data.push(d); }
+        if (selected_colors.indexOf(d[color_variable]) >= 0) { data.push(d); }
       });
     }
 
@@ -149,7 +164,6 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, color, t
 
     // Parse headers from first row of data
     var numeric_variables = [];
-    console.log(to_include);
     for (k in data[0]) {
       if (!isNaN(+data[0][k]) && to_include.indexOf(k) >= 0) { numeric_variables.push(k); }
     }
@@ -194,12 +208,12 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, color, t
     // Axes
     var axis = d3.svg.axis();
     var intf = d3.format('d');
-    var fltf = d3.format('.1f');
+    var fltf = d3.format('.f');
     var scif = d3.format('e');
     axis.ticks(5)
         .tickSize(size * numeric_variables.length)
         .tickFormat(function(d) {
-          if (+d > 10000) { return scif(d); }
+          if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
           if (parseInt(d) == +d) { return intf(d); }
           return fltf(d);
         });
