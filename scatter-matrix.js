@@ -2,7 +2,13 @@
 // http://mbostock.github.io/d3/talk/20111116/iris-splom.html
 //
 
-// TODO: fix where to put variable titles - not in diagonals but on side?
+// TODO:
+//   filter static data from each column
+//   only some variables make sense to be expanded
+//   label columns
+//   fix where to put variable titles - not in diagonals but on side?
+//   better zoom control, e.g. cannot allow all variable to be expanded
+//   need better example
 
 ScatterMatrix = function(url) {
   this.__url = url;
@@ -227,15 +233,51 @@ ScatterMatrix.prototype.__draw =
       y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
     });
 
+    var zoom_values = [];
+    var zoom_degrees = []
+    zoom_variables.forEach(function(variable) {
+      // Skip first one, since that's just the x axis
+      if (zoom_values.length == 0) {
+        zoom_values.push([]);
+        zoom_degrees.push(1);
+      }
+      else {
+        var values = [];
+        data.forEach(function(d) {
+          var v = d[variable];
+          if (v !== undefined && values.indexOf(v) < 0) { values.push(v); }
+        });
+        values.sort();
+        zoom_values.push(values);
+        zoom_degrees.push(values.length);
+      }
+    });
+    var total_columns = 1;
+    zoom_degrees.forEach(function(d) { total_columns *= d; });
+
     // Pick out stuff to draw on horizontal and vertical dimensions
+
     if (zoom_variables.length > 0) {
-      x_variables = [zoom_variables[0]];
+      // Draw first zoom variable multiple times
+      x_variables = [];
+      for (var i=0; i<total_columns; i++) {
+        x_variables.push(zoom_variables[0]);
+      }
     }
     else {
       x_variables = numeric_variables.slice(0);
     }
 
-    y_variables = numeric_variables.slice(0);
+    if (zoom_variables.length > 0) {
+      // Don't draw any of the "zoomed" variables
+      y_variables = [];
+      numeric_variables.forEach(function(variable) {
+        if (zoom_variables.indexOf(variable) < 0) { y_variables.push(variable); }
+      });
+    }
+    else {
+      y_variables = numeric_variables.slice(0);
+    }
 
     // Axes
     var x_axis = d3.svg.axis();
