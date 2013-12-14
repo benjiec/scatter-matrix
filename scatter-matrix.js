@@ -2,6 +2,8 @@
 // http://mbostock.github.io/d3/talk/20111116/iris-splom.html
 //
 
+// TODO: fix where to put variable titles - not in diagonals but on side?
+
 ScatterMatrix = function(url) {
   this.__url = url;
   this.__data = undefined;
@@ -45,11 +47,10 @@ ScatterMatrix.prototype.render = function () {
       else { numeric_variables.push(k); }
     }
 
-    control.append('p').text('Select a variable to color:')
-    
     var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
     var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
     var variable_control = control.append('div').attr('class', 'scatter-matrix-variable-control');
+    var zoom_control = control.append('div').attr('class', 'scatter-matrix-zoom-control');
 
     // shared control states
     var to_include = [];
@@ -59,6 +60,7 @@ ScatterMatrix.prototype.render = function () {
       var v = numeric_variables[j];
       to_include.push(v);
     }
+    var zoom_variables = [];
 
     function set_filter(variable) {
       filter_control.selectAll('*').remove();
@@ -95,13 +97,14 @@ ScatterMatrix.prototype.render = function () {
                      }
                      if (this.checked) { new_selected_colors.push(d); }
                      selected_colors = new_selected_colors;
-                     self.__draw(svg, color_variable, selected_colors, to_include);
+                     self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
                    });
         filter_li.append('label')
                    .html(function(d) { return d; });
       }
     }
 
+    color_control.append('p').text('Select a variable to color:')
     color_control
       .append('ul')
       .selectAll('li')
@@ -113,7 +116,7 @@ ScatterMatrix.prototype.render = function () {
           .on('click', function(d, i) {
             color_variable = d;
             selected_colors = undefined;
-            self.__draw(svg, color_variable, selected_colors, to_include);
+            self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
             set_filter(d);
           });
 
@@ -136,16 +139,35 @@ ScatterMatrix.prototype.render = function () {
                  }
                  if (this.checked) { new_to_include.push(d); }
                  to_include = new_to_include;
-                 self.__draw(svg, color_variable, selected_colors, to_include);
+                 self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
                });
     variable_li.append('label')
                .html(function(d) { return d; });
 
-    self.__draw(svg, color_variable, selected_colors, to_include);
+    zoom_control
+      .append('p').text('Zoom and Expand: ')
+      .append('ul')
+      .selectAll('li')
+      .data([undefined].concat(numeric_variables))
+      .enter().append('li')
+        .append('a')
+          .attr('href', '#')
+          .text(function(d) { return d ? d : 'None'; })
+          .on('click', function(d, i) {
+            if (d === undefined) {
+              zoom_variables = [];
+            } else {
+              if (zoom_variables.indexOf(d) < 0) { zoom_variables.push(d); }
+            }
+            self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
+          });
+
+    self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
   });
 };
 
-ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected_colors, to_include) {
+ScatterMatrix.prototype.__draw =
+  function(container_el, color_variable, selected_colors, to_include, zoom_variables) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
@@ -205,18 +227,38 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected
       y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
     });
 
+    // Pick out stuff to draw on horizontal and vertical dimensions
+    if (zoom_variables.length > 0) {
+      x_variables = [zoom_variables[0]];
+    }
+    else {
+      x_variables = numeric_variables.slice(0);
+    }
+
+    y_variables = numeric_variables.slice(0);
+
     // Axes
-    var axis = d3.svg.axis();
+    var x_axis = d3.svg.axis();
+    var y_axis = d3.svg.axis();
     var intf = d3.format('d');
     var fltf = d3.format('.f');
     var scif = d3.format('e');
-    axis.ticks(5)
-        .tickSize(size * numeric_variables.length)
-        .tickFormat(function(d) {
-          if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
-          if (parseInt(d) == +d) { return intf(d); }
-          return fltf(d);
-        });
+
+    x_axis.ticks(5)
+          .tickSize(size * y_variables.length)
+          .tickFormat(function(d) {
+            if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
+            if (parseInt(d) == +d) { return intf(d); }
+            return fltf(d);
+          });
+
+    y_axis.ticks(5)
+          .tickSize(size * x_variables.length)
+          .tickFormat(function(d) {
+            if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
+            if (parseInt(d) == +d) { return intf(d); }
+            return fltf(d);
+          });
 
     // Brush - for highlighting regions of data
     var brush = d3.svg.brush()
@@ -226,8 +268,8 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected
 
     // Root panel
     var svg = container_el.append("svg:svg")
-        .attr("width", axis_width + legend_width + margin * 2 + size * numeric_variables.length)
-        .attr("height", axis_width + margin * 2 + size * numeric_variables.length)
+        .attr("width", axis_width + legend_width + margin * 2 + size * x_variables.length)
+        .attr("height", axis_width + margin * 2 + size * y_variables.length)
       .append("svg:g")
         .attr("transform", "translate(" + margin + "," + margin + ")");
 
@@ -237,7 +279,7 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected
       .enter().append("svg:g")
         .attr("class", "legend")
         .attr("transform", function(d, i) {
-          return "translate(" + (margin + size * numeric_variables.length + axis_width) + "," + (i*20+10) + ")";
+          return "translate(" + (margin + size * x_variables.length + axis_width) + "," + (i*20+10) + ")";
         });
 
     legend.append("svg:circle")
@@ -251,23 +293,23 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected
 
     // Draw X-axis
     svg.selectAll("g.x.axis")
-        .data(numeric_variables)
+        .data(x_variables)
       .enter().append("svg:g")
         .attr("class", "x axis")
         .attr("transform", function(d, i) { return "translate(" + i * size + ",0)"; })
-        .each(function(d) { d3.select(this).call(axis.scale(x[d]).orient("bottom")); });
+        .each(function(d) { d3.select(this).call(x_axis.scale(x[d]).orient("bottom")); });
 
     // Draw Y-axis
     svg.selectAll("g.y.axis")
-        .data(numeric_variables)
+        .data(y_variables)
       .enter().append("svg:g")
         .attr("class", "y axis")
         .attr("transform", function(d, i) { return "translate(0," + i * size + ")"; })
-        .each(function(d) { d3.select(this).call(axis.scale(y[d]).orient("right")); });
+        .each(function(d) { d3.select(this).call(y_axis.scale(y[d]).orient("right")); });
 
     // Draw scatter plot
     var cell = svg.selectAll("g.cell")
-        .data(cross(numeric_variables, numeric_variables))
+        .data(cross(x_variables, y_variables))
       .enter().append("svg:g")
         .attr("class", "cell")
         .attr("transform", function(d) { return "translate(" + d.i * size + "," + d.j * size + ")"; })
@@ -331,7 +373,7 @@ ScatterMatrix.prototype.__draw = function(container_el, color_variable, selected
 
     function cross(a, b) {
       var c = [], n = a.length, m = b.length, i, j;
-      for (i = -1; ++i < numeric_variables.length;) for (j = -1; ++j < m;) c.push({x: a[i], i: i, y: b[j], j: j});
+      for (i = -1; ++i < n;) for (j = -1; ++j < m;) c.push({x: a[i], i: i, y: b[j], j: j});
       return c;
     }
   }); 
