@@ -215,7 +215,7 @@ ScatterMatrix.prototype.__draw =
 
     // Size parameters
     var size = self.__cell_size,
-        padding = 10, axis_width = 40, legend_width = 200, margin = 0;
+        padding = 10, axis_width = 40, legend_width = 200, margin = 20;
 
     // Get x and y scales for each numeric variable
     var x = {}, y = {};
@@ -356,20 +356,21 @@ ScatterMatrix.prototype.__draw =
         .attr("transform", function(d) { return "translate(" + d.i * size + "," + d.j * size + ")"; })
         .each(plot);
 
-    // Add titles for diagonal cells
-    cell.filter(function(d) { return d.i == d.j; }).append("svg:text")
-        .attr("x", padding)
-        .attr("y", padding)
+    // Add titles for y variables
+    cell.filter(function(d) { return d.i == 0; }).append("svg:text")
+        .attr("x", padding-size)
+        .attr("y", -margin)
         .attr("dy", ".71em")
-        .text(function(d) { return d.x; });
+        .attr("transform", function(d) { return "rotate(-90)"; })
+        .text(function(d) { return d.y; });
 
     function plot(p) {
       // console.log(p);
 
       var data_to_draw = data;
 
+      var filter = {};
       if (zoom_variables.length > 1) {
-        var filter = {};
         var column = p.i;
 
         var cap = 1;
@@ -416,6 +417,27 @@ ScatterMatrix.prototype.__draw =
           .attr("cx", function(d) { return x[p.x](d[p.x]); })
           .attr("cy", function(d) { return y[p.y](d[p.y]); })
           .attr("r", 5);
+
+      // Add titles for x variables
+      if (p.j == y_variables.length-1) {
+        cell.append("svg:text")
+            .attr("x", padding)
+            .attr("y", size+padding*2)
+            .attr("dy", ".71em")
+            .text(function(d) { return d.x; });
+      }
+
+      // Add filter titles
+      if (zoom_variables.length > 1) {
+        if (p.j == 0) {
+          var filter_desc = filter;
+          cell.append("svg:text")
+              .attr("x", padding)
+              .attr("y", padding-margin)
+              .attr("dy", ".71em")
+              .text(function(d) { return filter_desc; });
+        }
+      }
 
       // Brush
       cell.call(brush.x(x[p.x]).y(y[p.y]));
