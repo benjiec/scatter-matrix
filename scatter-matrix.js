@@ -3,7 +3,6 @@
 //
 
 // TODO:
-//   filter static data from each column
 //   only some variables make sense to be expanded
 //   label columns
 //   fix where to put variable titles - not in diagonals but on side?
@@ -365,6 +364,40 @@ ScatterMatrix.prototype.__draw =
         .text(function(d) { return d.x; });
 
     function plot(p) {
+      // console.log(p);
+
+      var data_to_draw = data;
+
+      if (zoom_variables.length > 1) {
+        var filter = {};
+        var column = p.i;
+
+        var cap = 1;
+        for (var i=zoom_variables.length-1; i > 0; i--) {
+          var var_name = zoom_variables[i];
+          var var_value = undefined;
+
+          if (i == zoom_variables.length-1) {
+            // for the last zoom variable, we index by %
+            var_value = zoom_values[i][column % zoom_degrees[i]];
+          }
+          else {
+            // otherwise divide by capacity of subsequent variables to get value array index
+            var_value = zoom_values[i][parseInt(column/cap)];
+          }
+
+          filter[var_name] = var_value;
+          cap *= zoom_degrees[i];
+        }
+
+        data_to_draw = [];
+        data.forEach(function(d) {
+          var pass = true;
+          for (k in filter) { if (d[k] != filter[k]) { pass = false; break; } }
+          if (pass === true) { data_to_draw.push(d); }
+        });
+      }
+
       var cell = d3.select(this);
 
       // Frame
@@ -377,7 +410,7 @@ ScatterMatrix.prototype.__draw =
 
       // Scatter plot dots
       cell.selectAll("circle")
-          .data(data)
+          .data(data_to_draw)
         .enter().append("svg:circle")
           .attr("class", function(d) { return color_class(d); })
           .attr("cx", function(d) { return x[p.x](d[p.x]); })
