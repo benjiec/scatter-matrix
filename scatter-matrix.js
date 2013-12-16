@@ -4,9 +4,7 @@
 
 // TODO:
 //   only some variables make sense to be expanded
-//   label columns
-//   fix where to put variable titles - not in diagonals but on side?
-//   better zoom control, e.g. cannot allow all variable to be expanded
+//   better drill control, e.g. cannot allow all variable to be expanded
 //   need better example
 
 ScatterMatrix = function(url) {
@@ -55,7 +53,7 @@ ScatterMatrix.prototype.render = function () {
     var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
     var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
     var variable_control = control.append('div').attr('class', 'scatter-matrix-variable-control');
-    var zoom_control = control.append('div').attr('class', 'scatter-matrix-zoom-control');
+    var drill_control = control.append('div').attr('class', 'scatter-matrix-drill-control');
 
     // shared control states
     var to_include = [];
@@ -65,7 +63,7 @@ ScatterMatrix.prototype.render = function () {
       var v = numeric_variables[j];
       to_include.push(v);
     }
-    var zoom_variables = [];
+    var drill_variables = [];
 
     function set_filter(variable) {
       filter_control.selectAll('*').remove();
@@ -102,7 +100,7 @@ ScatterMatrix.prototype.render = function () {
                      }
                      if (this.checked) { new_selected_colors.push(d); }
                      selected_colors = new_selected_colors;
-                     self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
+                     self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
                    });
         filter_li.append('label')
                    .html(function(d) { return d; });
@@ -121,7 +119,7 @@ ScatterMatrix.prototype.render = function () {
           .on('click', function(d, i) {
             color_variable = d;
             selected_colors = undefined;
-            self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
+            self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
             set_filter(d);
           });
 
@@ -144,13 +142,13 @@ ScatterMatrix.prototype.render = function () {
                  }
                  if (this.checked) { new_to_include.push(d); }
                  to_include = new_to_include;
-                 self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
+                 self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
                });
     variable_li.append('label')
                .html(function(d) { return d; });
 
-    zoom_control
-      .append('p').text('Zoom and Expand: ')
+    drill_control
+      .append('p').text('Drill and Expand: ')
       .append('ul')
       .selectAll('li')
       .data([undefined].concat(numeric_variables))
@@ -160,19 +158,19 @@ ScatterMatrix.prototype.render = function () {
           .text(function(d) { return d ? d : 'None'; })
           .on('click', function(d, i) {
             if (d === undefined) {
-              zoom_variables = [];
+              drill_variables = [];
             } else {
-              if (zoom_variables.indexOf(d) < 0) { zoom_variables.push(d); }
+              if (drill_variables.indexOf(d) < 0) { drill_variables.push(d); }
             }
-            self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
+            self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
           });
 
-    self.__draw(svg, color_variable, selected_colors, to_include, zoom_variables);
+    self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
   });
 };
 
 ScatterMatrix.prototype.__draw =
-  function(container_el, color_variable, selected_colors, to_include, zoom_variables) {
+  function(container_el, color_variable, selected_colors, to_include, drill_variables) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
@@ -214,8 +212,8 @@ ScatterMatrix.prototype.__draw =
     }
 
     // Size parameters
-    var size = self.__cell_size,
-        padding = 10, axis_width = 40, legend_width = 200, margin = 20;
+    var size = self.__cell_size, padding = 10,
+        axis_width = 20, axis_height = 15, legend_width = 200, label_height = 15;
 
     // Get x and y scales for each numeric variable
     var x = {}, y = {};
@@ -232,13 +230,18 @@ ScatterMatrix.prototype.__draw =
       y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
     });
 
-    var zoom_values = [];
-    var zoom_degrees = []
-    zoom_variables.forEach(function(variable) {
+    // When drilling, user select one or more variables. The first drilled
+    // variable becomes the x-axis variable for all columns, and each column
+    // contains only data points that match specific values for each of the
+    // drilled variables other than the first.
+
+    var drill_values = [];
+    var drill_degrees = []
+    drill_variables.forEach(function(variable) {
       // Skip first one, since that's just the x axis
-      if (zoom_values.length == 0) {
-        zoom_values.push([]);
-        zoom_degrees.push(1);
+      if (drill_values.length == 0) {
+        drill_values.push([]);
+        drill_degrees.push(1);
       }
       else {
         var values = [];
@@ -247,35 +250,40 @@ ScatterMatrix.prototype.__draw =
           if (v !== undefined && values.indexOf(v) < 0) { values.push(v); }
         });
         values.sort();
-        zoom_values.push(values);
-        zoom_degrees.push(values.length);
+        drill_values.push(values);
+        drill_degrees.push(values.length);
       }
     });
     var total_columns = 1;
-    zoom_degrees.forEach(function(d) { total_columns *= d; });
+    drill_degrees.forEach(function(d) { total_columns *= d; });
 
     // Pick out stuff to draw on horizontal and vertical dimensions
 
-    if (zoom_variables.length > 0) {
-      // Draw first zoom variable multiple times
+    if (drill_variables.length > 0) {
+      // First drill is now the x-axis variable for all columns
       x_variables = [];
       for (var i=0; i<total_columns; i++) {
-        x_variables.push(zoom_variables[0]);
+        x_variables.push(drill_variables[0]);
       }
     }
     else {
       x_variables = numeric_variables.slice(0);
     }
 
-    if (zoom_variables.length > 0) {
-      // Don't draw any of the "zoomed" variables
+    if (drill_variables.length > 0) {
+      // Don't draw any of the "drilled" variables in vertical dimension
       y_variables = [];
       numeric_variables.forEach(function(variable) {
-        if (zoom_variables.indexOf(variable) < 0) { y_variables.push(variable); }
+        if (drill_variables.indexOf(variable) < 0) { y_variables.push(variable); }
       });
     }
     else {
       y_variables = numeric_variables.slice(0);
+    }
+
+    var filter_descriptions = 0;
+    if (drill_variables.length > 1) {
+      filter_descriptions = drill_variables.length-1;
     }
 
     // Axes
@@ -309,10 +317,10 @@ ScatterMatrix.prototype.__draw =
 
     // Root panel
     var svg = container_el.append("svg:svg")
-        .attr("width", axis_width + legend_width + margin * 2 + size * x_variables.length)
-        .attr("height", axis_width + margin * 2 + size * y_variables.length)
+        .attr("width", label_height + size * x_variables.length + axis_width + padding + legend_width)
+        .attr("height", size * y_variables.length + axis_height + label_height + label_height*filter_descriptions)
       .append("svg:g")
-        .attr("transform", "translate(" + margin + "," + margin + ")");
+        .attr("transform", "translate("+label_height+",0)");
 
     // Push legend to the side
     var legend = svg.selectAll("g.legend")
@@ -320,7 +328,7 @@ ScatterMatrix.prototype.__draw =
       .enter().append("svg:g")
         .attr("class", "legend")
         .attr("transform", function(d, i) {
-          return "translate(" + (margin + size * x_variables.length + axis_width) + "," + (i*20+10) + ")";
+          return "translate(" + (label_height + size * x_variables.length + padding) + "," + (i*20+10) + ")";
         });
 
     legend.append("svg:circle")
@@ -359,7 +367,7 @@ ScatterMatrix.prototype.__draw =
     // Add titles for y variables
     cell.filter(function(d) { return d.i == 0; }).append("svg:text")
         .attr("x", padding-size)
-        .attr("y", -margin)
+        .attr("y", -label_height)
         .attr("dy", ".71em")
         .attr("transform", function(d) { return "rotate(-90)"; })
         .text(function(d) { return d.y; });
@@ -369,26 +377,29 @@ ScatterMatrix.prototype.__draw =
 
       var data_to_draw = data;
 
+      // If drilling, compute what values of the drill variables correspond to
+      // this column.
+      //
       var filter = {};
-      if (zoom_variables.length > 1) {
+      if (drill_variables.length > 1) {
         var column = p.i;
 
         var cap = 1;
-        for (var i=zoom_variables.length-1; i > 0; i--) {
-          var var_name = zoom_variables[i];
+        for (var i=drill_variables.length-1; i > 0; i--) {
+          var var_name = drill_variables[i];
           var var_value = undefined;
 
-          if (i == zoom_variables.length-1) {
-            // for the last zoom variable, we index by %
-            var_value = zoom_values[i][column % zoom_degrees[i]];
+          if (i == drill_variables.length-1) {
+            // for the last drill variable, we index by %
+            var_value = drill_values[i][column % drill_degrees[i]];
           }
           else {
             // otherwise divide by capacity of subsequent variables to get value array index
-            var_value = zoom_values[i][parseInt(column/cap)];
+            var_value = drill_values[i][parseInt(column/cap)];
           }
 
           filter[var_name] = var_value;
-          cap *= zoom_degrees[i];
+          cap *= drill_degrees[i];
         }
 
         data_to_draw = [];
@@ -418,24 +429,24 @@ ScatterMatrix.prototype.__draw =
           .attr("cy", function(d) { return y[p.y](d[p.y]); })
           .attr("r", 5);
 
-      // Add titles for x variables
+      // Add titles for x variables and drill variable values
       if (p.j == y_variables.length-1) {
         cell.append("svg:text")
             .attr("x", padding)
-            .attr("y", size+padding*2)
+            .attr("y", size+axis_height)
             .attr("dy", ".71em")
             .text(function(d) { return d.x; });
-      }
 
-      // Add filter titles
-      if (zoom_variables.length > 1) {
-        if (p.j == 0) {
-          var filter_desc = filter;
-          cell.append("svg:text")
-              .attr("x", padding)
-              .attr("y", padding-margin)
-              .attr("dy", ".71em")
-              .text(function(d) { return filter_desc; });
+        if (drill_variables.length > 1) {
+          var i = 0;
+          for (k in filter) {
+            i += 1;
+            cell.append("svg:text")
+                .attr("x", padding)
+                .attr("y", size+axis_height+label_height*i)
+                .attr("dy", ".71em")
+                .text(function(d) { return ''+k+'='+filter[k]; });
+          }
         }
       }
 
