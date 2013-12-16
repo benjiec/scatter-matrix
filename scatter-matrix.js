@@ -56,6 +56,7 @@ ScatterMatrix.prototype.render = function () {
       }
     });
 
+    var size_control = control.append('div').attr('class', 'scatter-matrix-size-control');
     var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
     var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
     var variable_control = control.append('div').attr('class', 'scatter-matrix-variable-control');
@@ -106,12 +107,29 @@ ScatterMatrix.prototype.render = function () {
                      }
                      if (this.checked) { new_selected_colors.push(d); }
                      selected_colors = new_selected_colors;
-                     self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
+                     self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
                    });
         filter_li.append('label')
                    .html(function(d) { return d; });
       }
     }
+
+    size_a = size_control.append('p').text('Change cell size: ');
+    size_a.append('a')
+          .attr('href', '#')
+          .html('-')
+          .on('click', function() {
+            self.__cell_size *= 0.75;
+            self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
+          });
+    size_a.append('span').html('&nbsp;');
+    size_a.append('a')
+          .attr('href', '#')
+          .html('+')
+          .on('click', function() {
+            self.__cell_size *= 1.25;
+            self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
+          });
 
     color_control.append('p').text('Select a variable to color:')
     color_control
@@ -125,7 +143,7 @@ ScatterMatrix.prototype.render = function () {
           .on('click', function(d, i) {
             color_variable = d;
             selected_colors = undefined;
-            self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
+            self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
             set_filter(d);
           });
 
@@ -148,7 +166,7 @@ ScatterMatrix.prototype.render = function () {
                  }
                  if (this.checked) { new_to_include.push(d); }
                  to_include = new_to_include;
-                 self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
+                 self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
                });
     variable_li.append('label')
                .html(function(d) { return d; });
@@ -171,17 +189,17 @@ ScatterMatrix.prototype.render = function () {
                }
                if (this.checked) { new_drill_variables.push(d); }
                drill_variables = new_drill_variables;
-               self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
+               self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
              });
     drill_li.append('label')
             .html(function(d) { return d+' ('+numeric_variable_values[d].length+')'; });
 
-    self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
+    self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
   });
 };
 
 ScatterMatrix.prototype.__draw =
-  function(container_el, color_variable, selected_colors, to_include, drill_variables) {
+  function(cell_size, container_el, color_variable, selected_colors, to_include, drill_variables) {
   var self = this;
   this.onData(function() {
     var data = self.__data;
@@ -223,7 +241,7 @@ ScatterMatrix.prototype.__draw =
     }
 
     // Size parameters
-    var size = self.__cell_size, padding = 10,
+    var size = cell_size, padding = 10,
         axis_width = 20, axis_height = 15, legend_width = 200, label_height = 15;
 
     // Get x and y scales for each numeric variable
@@ -456,7 +474,7 @@ ScatterMatrix.prototype.__draw =
                 .attr("x", padding)
                 .attr("y", size+axis_height+label_height*i)
                 .attr("dy", ".71em")
-                .text(function(d) { return ''+k+'='+filter[k]; });
+                .text(function(d) { return filter[k]+': '+k; });
           }
         }
       }
