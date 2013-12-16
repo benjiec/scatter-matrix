@@ -37,7 +37,7 @@ ScatterMatrix.prototype.render = function () {
     var data = self.__data;
 
     // Fetch data and get all string variables
-    var string_variables = [undefined];
+    var string_variables = [];
     var numeric_variables = [];
     var numeric_variable_values = {};
 
@@ -135,7 +135,7 @@ ScatterMatrix.prototype.render = function () {
     color_control
       .append('ul')
       .selectAll('li')
-      .data(string_variables)
+      .data([undefined].concat(string_variables))
       .enter().append('li')
         .append('a')
           .attr('href', '#')
@@ -176,7 +176,7 @@ ScatterMatrix.prototype.render = function () {
         .append('p').text('Drill and Expand: ')
         .append('ul')
         .selectAll('li')
-        .data(numeric_variables)
+        .data(numeric_variables.concat(string_variables))
         .enter().append('li');
 
     drill_li.append('input')
@@ -192,7 +192,7 @@ ScatterMatrix.prototype.render = function () {
                self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
              });
     drill_li.append('label')
-            .html(function(d) { return d+' ('+numeric_variable_values[d].length+')'; });
+            .html(function(d) { return d; });//+' ('+numeric_variable_values[d].length+')'; });
 
     self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
   });
