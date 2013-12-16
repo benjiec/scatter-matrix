@@ -2,11 +2,6 @@
 // http://mbostock.github.io/d3/talk/20111116/iris-splom.html
 //
 
-// TODO:
-//   only some variables make sense to be expanded
-//   better drill control, e.g. cannot allow all variable to be expanded
-//   need better example
-
 ScatterMatrix = function(url) {
   this.__url = url;
   this.__data = undefined;
@@ -44,11 +39,22 @@ ScatterMatrix.prototype.render = function () {
     // Fetch data and get all string variables
     var string_variables = [undefined];
     var numeric_variables = [];
+    var numeric_variable_values = {};
 
     for (k in data[0]) {
       if (isNaN(+data[0][k])) { string_variables.push(k); }
-      else { numeric_variables.push(k); }
+      else { numeric_variables.push(k); numeric_variable_values[k] = []; }
     }
+
+    data.forEach(function(d) {
+      for (var j in numeric_variables) {
+        var k = numeric_variables[j];
+        var value = d[k];
+        if (numeric_variable_values[k].indexOf(value) < 0) {
+          numeric_variable_values[k].push(value);
+        }
+      }
+    });
 
     var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
     var filter_control = control.append('div').attr('class', 'scatter-matrix-filter-control');
@@ -147,23 +153,28 @@ ScatterMatrix.prototype.render = function () {
     variable_li.append('label')
                .html(function(d) { return d; });
 
-    drill_control
-      .append('p').text('Drill and Expand: ')
-      .append('ul')
-      .selectAll('li')
-      .data([undefined].concat(numeric_variables))
-      .enter().append('li')
-        .append('a')
-          .attr('href', '#')
-          .text(function(d) { return d ? d : 'None'; })
-          .on('click', function(d, i) {
-            if (d === undefined) {
-              drill_variables = [];
-            } else {
-              if (drill_variables.indexOf(d) < 0) { drill_variables.push(d); }
-            }
-            self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
-          });
+    drill_li = 
+      drill_control
+        .append('p').text('Drill and Expand: ')
+        .append('ul')
+        .selectAll('li')
+        .data(numeric_variables)
+        .enter().append('li');
+
+    drill_li.append('input')
+            .attr('type', 'checkbox')
+            .on('click', function(d, i) {
+               var new_drill_variables = [];
+               for (var j in drill_variables) {
+                 var v = drill_variables[j];
+                 if (v !== d || this.checked) { new_drill_variables.push(v); } 
+               }
+               if (this.checked) { new_drill_variables.push(d); }
+               drill_variables = new_drill_variables;
+               self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
+             });
+    drill_li.append('label')
+            .html(function(d) { return d+' ('+numeric_variable_values[d].length+')'; });
 
     self.__draw(svg, color_variable, selected_colors, to_include, drill_variables);
   });
