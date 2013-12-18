@@ -114,7 +114,7 @@ ScatterMatrix.prototype.render = function () {
       }
     }
 
-    size_a = size_control.append('p').text('Change cell size: ');
+    size_a = size_control.append('p').text('Change plot size: ');
     size_a.append('a')
           .attr('href', '#')
           .html('-')
