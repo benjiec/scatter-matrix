@@ -131,7 +131,7 @@ ScatterMatrix.prototype.render = function () {
             self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
           });
 
-    color_control.append('p').text('Select a variable to color:')
+    color_control.append('p').text('Select a variable to color:');
     color_control
       .append('ul')
       .selectAll('li')
