@@ -119,7 +119,7 @@ ScatterMatrix.prototype.render = function () {
 
     size_a = size_control.append('p').text('Change plot size: ');
     size_a.append('a')
-          .attr('href', '#')
+          .attr('href', 'javascript:void(0);')
           .html('-')
           .on('click', function() {
             self.__cell_size *= 0.75;
@@ -127,7 +127,7 @@ ScatterMatrix.prototype.render = function () {
           });
     size_a.append('span').html('&nbsp;');
     size_a.append('a')
-          .attr('href', '#')
+          .attr('href', 'javascript:void(0);')
           .html('+')
           .on('click', function() {
             self.__cell_size *= 1.25;
@@ -141,7 +141,7 @@ ScatterMatrix.prototype.render = function () {
       .data([undefined].concat(string_variables))
       .enter().append('li')
         .append('a')
-          .attr('href', '#')
+          .attr('href', 'javascript:void(0);')
           .text(function(d) { return d ? d : 'None'; })
           .on('click', function(d, i) {
             color_variable = d;
