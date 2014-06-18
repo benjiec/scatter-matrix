@@ -5,7 +5,7 @@
 ScatterMatrix = function(url, data) {
   this.__url = url;
   if (data === undefined || data === null) { this.__data = undefined; }
-  else { this.__data = data; }
+  else { this.__data = d3.csv.parse(data); }
   this.__cell_size = 140;
 };
 
