@@ -2,11 +2,13 @@
 // http://mbostock.github.io/d3/talk/20111116/iris-splom.html
 //
 
-ScatterMatrix = function(url, data) {
+ScatterMatrix = function(url, data, dom_id) {
   this.__url = url;
   if (data === undefined || data === null) { this.__data = undefined; }
   else { this.__data = d3.csv.parse(data); }
   this.__cell_size = 140;
+  if (dom_id === undefined) { this.__dom_id = 'body'; }
+  else { this.__dom_id = "#"+dom_id; }
 };
 
 ScatterMatrix.prototype.cellSize = function(n) {
@@ -26,8 +28,8 @@ ScatterMatrix.prototype.onData = function(cb) {
 ScatterMatrix.prototype.render = function () {
   var self = this;
 
-  var container = d3.select('body').append('div')
-                                   .attr('class', 'scatter-matrix-container');
+  var container = d3.select(this.__dom_id).append('div')
+                    .attr('class', 'scatter-matrix-container');
   var control = container.append('div')
                          .attr('class', 'scatter-matrix-control');
   var svg = container.append('div')
