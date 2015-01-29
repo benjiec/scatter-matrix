@@ -25,6 +25,13 @@ ScatterMatrix.prototype.onData = function(cb) {
   });
 };
 
+ScatterMatrix.prototype._numeric_to_str_key = function(k) { return k+'_'; };
+ScatterMatrix.prototype._is_numeric_str_key = function(k) { return k[k.length-1] === '_'; };
+ScatterMatrix.prototype._str_to_numeric_key = function(k) {
+  if (this._is_numeric_str_key(k)) { return k.slice(0, k.length-1); }
+  return null;
+};
+
 ScatterMatrix.prototype.render = function () {
   var self = this;
 
@@ -39,25 +46,58 @@ ScatterMatrix.prototype.render = function () {
   this.onData(function() {
     var data = self.__data;
 
-    // Fetch data and get all string variables
+    // Divide variables into string and numeric variables
+
     var string_variables = [];
-    var numeric_variables = [];
-    var numeric_variable_values = {};
+    self.__string_variable_values = {};
+    self.__numeric_variables = [];
 
     for (k in data[0]) {
-      if (isNaN(+data[0][k])) { string_variables.push(k); }
-      else { numeric_variables.push(k); numeric_variable_values[k] = []; }
+      var is_numeric = true;
+      data.forEach(function(d) {
+        var v = d[k];
+        if (isNaN(+v)) is_numeric = false;
+      });
+      if (is_numeric)
+        self.__numeric_variables.push(k);
+      else {
+        string_variables.push(k);
+        self.__string_variable_values[k] = [];
+      }
     }
 
+    // For string variables, make a numeric counterpart that has as value the
+    // index of the value
+
     data.forEach(function(d) {
-      for (var j in numeric_variables) {
-        var k = numeric_variables[j];
+      for (var j in string_variables) {
+        var k = string_variables[j];
         var value = d[k];
-        if (numeric_variable_values[k].indexOf(value) < 0) {
-          numeric_variable_values[k].push(value);
-        }
+        if (self.__string_variable_values[k].indexOf(value) < 0)
+          self.__string_variable_values[k].push(value);
       }
     });
+
+    // sort, then assign index
+    for (var j in string_variables) {
+      var k = string_variables[j];
+      self.__string_variable_values[k].sort();
+    }
+    data.forEach(function(d) {
+      for (var j in string_variables) {
+        var k = string_variables[j];
+        var value = d[k];
+        var index = self.__string_variable_values[k].indexOf(value);
+        d[self._numeric_to_str_key(k)] = index;
+      }
+    });
+
+    for (var j in string_variables) {
+      var k = string_variables[j];
+      self.__numeric_variables.push(self._numeric_to_str_key(k));
+    }
+
+    // Add controls on the left
 
     var size_control = control.append('div').attr('class', 'scatter-matrix-size-control');
     var color_control = control.append('div').attr('class', 'scatter-matrix-color-control');
@@ -69,10 +109,10 @@ ScatterMatrix.prototype.render = function () {
     var to_include = [];
     var color_variable = undefined;
     var selected_colors = undefined;
-    for (var j in numeric_variables) {
-      var v = numeric_variables[j];
-      to_include.push(v);
-    }
+
+    for (var j in self.__numeric_variables)
+      to_include.push(self.__numeric_variables[j]);
+
     var drill_variables = [];
 
     function set_filter(variable) {
@@ -155,7 +195,7 @@ ScatterMatrix.prototype.render = function () {
         .append('p').text('Include variables: ')
         .append('ul')
         .selectAll('li')
-        .data(numeric_variables)
+        .data(self.__numeric_variables)
         .enter().append('li');
 
     variable_li.append('input')
@@ -172,14 +212,17 @@ ScatterMatrix.prototype.render = function () {
                  self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
                });
     variable_li.append('label')
-               .html(function(d) { return d; });
+               .html(function(d) {
+                 var i = self.__numeric_variables.indexOf(d)+1;
+                 return ''+i+': '+d;
+               });
 
     drill_li = 
       drill_control
         .append('p').text('Drill and Expand: ')
         .append('ul')
         .selectAll('li')
-        .data(numeric_variables.concat(string_variables))
+        .data(self.__numeric_variables.concat(string_variables))
         .enter().append('li');
 
     drill_li.append('input')
@@ -195,7 +238,7 @@ ScatterMatrix.prototype.render = function () {
                self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
              });
     drill_li.append('label')
-            .html(function(d) { return d; });//+' ('+numeric_variable_values[d].length+')'; });
+            .html(function(d) { return d; });
 
     self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
   });
@@ -207,6 +250,7 @@ ScatterMatrix.prototype.__draw =
   this.onData(function() {
     var data = self.__data;
 
+    // filter data by selected colors
     if (color_variable && selected_colors) {
       data = [];
       self.__data.forEach(function(d) {
@@ -220,17 +264,13 @@ ScatterMatrix.prototype.__draw =
     if (data.length == 0) { return; }
 
     // Parse headers from first row of data
-    var numeric_variables = [];
-    for (k in data[0]) {
-      if (!isNaN(+data[0][k]) && to_include.indexOf(k) >= 0) { numeric_variables.push(k); }
-    }
-    numeric_variables.sort();
+    var variables_to_draw = to_include.slice(0);
 
     // Get values of the string variable
     var colors = [];
     if (color_variable) {
-      // Using self.__data, instead of data, so our css classes are consistent when
-      // we filter by value.
+      // Using self.__data (all data), instead of data (data to be drawn), so
+      // our css classes are consistent when we filter by value.
       self.__data.forEach(function(d) {
         var s = d[color_variable];
         if (colors.indexOf(s) < 0) { colors.push(s); }
@@ -249,7 +289,7 @@ ScatterMatrix.prototype.__draw =
 
     // Get x and y scales for each numeric variable
     var x = {}, y = {};
-    numeric_variables.forEach(function(trait) {
+    variables_to_draw.forEach(function(trait) {
       // Coerce values to numbers.
       data.forEach(function(d) { d[trait] = +d[trait]; });
 
@@ -298,48 +338,28 @@ ScatterMatrix.prototype.__draw =
         x_variables.push(drill_variables[0]);
       }
     }
-    else {
-      x_variables = numeric_variables.slice(0);
-    }
+    else
+      x_variables = variables_to_draw.slice(0);
 
     if (drill_variables.length > 0) {
       // Don't draw any of the "drilled" variables in vertical dimension
       y_variables = [];
-      numeric_variables.forEach(function(variable) {
+      variables_to_draw.forEach(function(variable) {
         if (drill_variables.indexOf(variable) < 0) { y_variables.push(variable); }
       });
     }
-    else {
-      y_variables = numeric_variables.slice(0);
-    }
-
+    else
+      y_variables = variables_to_draw.slice(0);
+    y_variables = y_variables.reverse();
     var filter_descriptions = 0;
     if (drill_variables.length > 1) {
       filter_descriptions = drill_variables.length-1;
     }
 
-    // Axes
-    var x_axis = d3.svg.axis();
-    var y_axis = d3.svg.axis();
+    // Formatting for axis
     var intf = d3.format('d');
     var fltf = d3.format('.f');
-    var scif = d3.format('e');
-
-    x_axis.ticks(5)
-          .tickSize(size * y_variables.length)
-          .tickFormat(function(d) {
-            if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
-            if (parseInt(d) == +d) { return intf(d); }
-            return fltf(d);
-          });
-
-    y_axis.ticks(5)
-          .tickSize(size * x_variables.length)
-          .tickFormat(function(d) {
-            if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
-            if (parseInt(d) == +d) { return intf(d); }
-            return fltf(d);
-          });
+    var scif = d3.format('.1e');
 
     // Brush - for highlighting regions of data
     var brush = d3.svg.brush()
@@ -372,13 +392,36 @@ ScatterMatrix.prototype.__draw =
         .attr("dy", ".31em")
         .text(function(d) { return d; });
 
+    var reshape_axis = function (axis, k) {
+      if (self._is_numeric_str_key(k)) {
+        var sk = self._str_to_numeric_key(k);
+        axis.tickFormat(function(d) { return self.__string_variable_values[sk][d]; });
+        if (self.__string_variable_values[sk].length < 10)
+          axis.ticks(self.__string_variable_values[sk].length);
+        else
+          axis.ticks(2);
+      }
+      else
+        axis.ticks(5)
+            .tickFormat(function (d) {
+                          if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) { return scif(d); }
+                          if (parseInt(d) == +d) { return intf(d); }
+                          return fltf(d);
+                        });
+      return axis;
+    };
+
     // Draw X-axis
     svg.selectAll("g.x.axis")
         .data(x_variables)
       .enter().append("svg:g")
         .attr("class", "x axis")
         .attr("transform", function(d, i) { return "translate(" + i * size + ",0)"; })
-        .each(function(d) { d3.select(this).call(x_axis.scale(x[d]).orient("bottom")); });
+        .each(function(k) {
+          var axis = reshape_axis(d3.svg.axis(), k);
+          axis.tickSize(size * y_variables.length);
+          d3.select(this).call(axis.scale(x[k]).orient('bottom'));
+        });
 
     // Draw Y-axis
     svg.selectAll("g.y.axis")
@@ -386,9 +429,14 @@ ScatterMatrix.prototype.__draw =
       .enter().append("svg:g")
         .attr("class", "y axis")
         .attr("transform", function(d, i) { return "translate(0," + i * size + ")"; })
-        .each(function(d) { d3.select(this).call(y_axis.scale(y[d]).orient("right")); });
+        .each(function(k) {
+          var axis = reshape_axis(d3.svg.axis(), k);
+          axis.tickSize(size * x_variables.length);
+          d3.select(this).call(axis.scale(y[k]).orient('right'));
+        });
 
     // Draw scatter plot
+
     var cell = svg.selectAll("g.cell")
         .data(cross(x_variables, y_variables))
       .enter().append("svg:g")
@@ -402,7 +450,13 @@ ScatterMatrix.prototype.__draw =
         .attr("y", -label_height)
         .attr("dy", ".71em")
         .attr("transform", function(d) { return "rotate(-90)"; })
-        .text(function(d) { return d.y; });
+        .text(function(d) {
+          var s = self.__numeric_variables.indexOf(d.y)+1;
+          s = ''+s+': '+d.y;
+          if (s.length > 16)
+            return s.slice(0, 8)+'...'+s.slice(s.length-8, s.length);
+          return s;
+        });
 
     function plot(p) {
       // console.log(p);
@@ -467,7 +521,13 @@ ScatterMatrix.prototype.__draw =
             .attr("x", padding)
             .attr("y", size+axis_height)
             .attr("dy", ".71em")
-            .text(function(d) { return d.x; });
+            .text(function(d) {
+              var s = self.__numeric_variables.indexOf(d.x)+1;
+              s = ''+s+': '+d.x;
+              if (s.length > 16)
+                return s.slice(0, 8)+'...'+s.slice(s.length-8, s.length);
+              return s;
+            });
 
         if (drill_variables.length > 1) {
           var i = 0;
@@ -519,4 +579,3 @@ ScatterMatrix.prototype.__draw =
   }); 
 
 };
-
