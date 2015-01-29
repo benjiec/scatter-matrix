@@ -106,13 +106,9 @@ ScatterMatrix.prototype.render = function () {
     var drill_control = control.append('div').attr('class', 'scatter-matrix-drill-control');
 
     // shared control states
-    var to_include = [];
+    var to_include = self.__numeric_variables.slice(0, 5);
     var color_variable = undefined;
     var selected_colors = undefined;
-
-    for (var j in self.__numeric_variables)
-      to_include.push(self.__numeric_variables[j]);
-
     var drill_variables = [];
 
     function set_filter(variable) {
@@ -200,7 +196,7 @@ ScatterMatrix.prototype.render = function () {
 
     variable_li.append('input')
                .attr('type', 'checkbox')
-               .attr('checked', 'checked')
+               .attr('checked', function(d, i) { if (to_include.indexOf(d) >= 0) return "checked"; return null; })
                .on('click', function(d, i) {
                  var new_to_include = [];
                  for (var j in to_include) {
@@ -222,7 +218,7 @@ ScatterMatrix.prototype.render = function () {
         .append('p').text('Drill and Expand: ')
         .append('ul')
         .selectAll('li')
-        .data(self.__numeric_variables.concat(string_variables))
+        .data(self.__numeric_variables)
         .enter().append('li');
 
     drill_li.append('input')
