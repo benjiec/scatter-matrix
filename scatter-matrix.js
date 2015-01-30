@@ -124,11 +124,7 @@ ScatterMatrix.prototype.render = function () {
           if (values.indexOf(v) < 0) { values.push(v); }
         });
 
-        selected_colors = [];
-        for (var j in values) {
-          var v = values[j];
-          selected_colors.push(v);
-        }
+        selected_colors = values.slice(0, 5);
 
         var filter_li =
           filter_control
@@ -140,7 +136,11 @@ ScatterMatrix.prototype.render = function () {
 
         filter_li.append('input')
                    .attr('type', 'checkbox')
-                   .attr('checked', 'checked')
+                   .attr('checked', function(d, i) {
+                     if (selected_colors.indexOf(d) >= 0)
+                       return 'checked';
+                     return null;
+                   })
                    .on('click', function(d, i) {
                      var new_selected_colors = [];
                      for (var j in selected_colors) {
@@ -149,7 +149,8 @@ ScatterMatrix.prototype.render = function () {
                      }
                      if (this.checked) { new_selected_colors.push(d); }
                      selected_colors = new_selected_colors;
-                     self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
+                     self.__draw(self.__cell_size, svg, color_variable,
+                                 selected_colors, to_include, drill_variables);
                    });
         filter_li.append('label')
                    .html(function(d) { return d; });
@@ -184,9 +185,8 @@ ScatterMatrix.prototype.render = function () {
           .text(function(d) { return d ? d : 'None'; })
           .on('click', function(d, i) {
             color_variable = d;
-            selected_colors = undefined;
-            self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
             set_filter(d);
+            self.__draw(self.__cell_size, svg, color_variable, selected_colors, to_include, drill_variables);
           });
 
     var variable_li =
