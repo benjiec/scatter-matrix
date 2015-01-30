@@ -49,6 +49,7 @@ ScatterMatrix.prototype.render = function () {
     // Divide variables into string and numeric variables
 
     var string_variables = [];
+    var original_numeric_variables = [];
     self.__string_variable_values = {};
     self.__numeric_variables = [];
 
@@ -58,8 +59,10 @@ ScatterMatrix.prototype.render = function () {
         var v = d[k];
         if (isNaN(+v)) is_numeric = false;
       });
-      if (is_numeric)
+      if (is_numeric) {
         self.__numeric_variables.push(k);
+        original_numeric_variables.push(k);
+      }
       else {
         string_variables.push(k);
         self.__string_variable_values[k] = [];
@@ -218,7 +221,7 @@ ScatterMatrix.prototype.render = function () {
         .append('p').text('Drill and Expand: ')
         .append('ul')
         .selectAll('li')
-        .data(self.__numeric_variables)
+        .data(original_numeric_variables.concat(string_variables))
         .enter().append('li');
 
     drill_li.append('input')
