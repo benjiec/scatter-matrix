@@ -391,6 +391,12 @@ ScatterMatrix.prototype.__draw =
         .attr("dy", ".31em")
         .text(function(d) { return d; });
 
+    var shorten = function (s) {
+      if (s.length > 16)
+        return s.slice(0, 8)+'...'+s.slice(s.length-8, s.length);
+      return s;
+    };
+
     var reshape_axis = function (axis, k) {
       if (self._is_numeric_str_key(k)) {
         var sk = self._str_to_numeric_key(k);
@@ -452,9 +458,7 @@ ScatterMatrix.prototype.__draw =
         .text(function(d) {
           var s = self.__numeric_variables.indexOf(d.y)+1;
           s = ''+s+': '+d.y;
-          if (s.length > 16)
-            return s.slice(0, 8)+'...'+s.slice(s.length-8, s.length);
-          return s;
+          return shorten(s);
         });
 
     function plot(p) {
@@ -523,9 +527,7 @@ ScatterMatrix.prototype.__draw =
             .text(function(d) {
               var s = self.__numeric_variables.indexOf(d.x)+1;
               s = ''+s+': '+d.x;
-              if (s.length > 16)
-                return s.slice(0, 8)+'...'+s.slice(s.length-8, s.length);
-              return s;
+              return shorten(s);
             });
 
         if (drill_variables.length > 1) {
@@ -536,7 +538,7 @@ ScatterMatrix.prototype.__draw =
                 .attr("x", padding)
                 .attr("y", size+axis_height+label_height*i)
                 .attr("dy", ".71em")
-                .text(function(d) { return filter[k]+': '+k; });
+                .text(function(d) { return shorten(filter[k]+': '+k); });
           }
         }
       }
