@@ -393,7 +393,7 @@ ScatterMatrix.prototype.__draw =
 
     var shorten = function (s) {
       if (s.length > 16)
-        return s.slice(0, 8)+'...'+s.slice(s.length-8, s.length);
+        return s.slice(0, 12)+'...'+s.slice(s.length-8, s.length);
       return s;
     };
 
